@@ -8,17 +8,16 @@ import SpeciesCard from "./species-card";
 export default async function SpeciesList() {
   // Create supabase server component client and obtain user session from stored cookie
   const supabase = createServerSupabaseClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // Fetch the logged-in user's session
+  const { data } = await supabase.auth.getSession();
+  const session = data?.session;
+  // Obtain the ID of the currently signed-in user
+  const sessionId: string = session?.user?.id ?? "";
 
   if (!session) {
     // this is a protected route - only users who are signed in can view this route
     redirect("/");
   }
-
-  // Obtain the ID of the currently signed-in user
-  const sessionId = session.user.id;
 
   const { data: species } = await supabase.from("species").select("*").order("id", { ascending: false });
 
@@ -30,7 +29,10 @@ export default async function SpeciesList() {
       </div>
       <Separator className="my-4" />
       <div className="flex flex-wrap justify-center">
-        {species?.map((species) => <SpeciesCard key={species.id} species={species} />)}
+        {species?.map((species) => (
+          // Pass `sessionId` to `SpeciesCard`
+          <SpeciesCard key={species.id} species={species} sessionId={sessionId} />
+        ))}
       </div>
     </>
   );
