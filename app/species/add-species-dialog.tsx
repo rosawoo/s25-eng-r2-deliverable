@@ -81,12 +81,47 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
   // Control open/closed state of the dialog
   const [open, setOpen] = useState<boolean>(false);
 
+  // Wikipedia feature
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
+
   // Instantiate form functionality with React Hook Form, passing in the Zod schema (for validation) and default values
   const form = useForm<FormData>({
     resolver: zodResolver(speciesSchema),
     defaultValues,
     mode: "onChange",
   });
+
+  const fetchWikipediaData = async () => {
+    if (!searchTerm.trim()) {
+      toast({ title: "Error", description: "Please enter a species name", variant: "destructive" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`);
+      const data: any = await response.json();
+
+      console.log("Wikipedia API response:", data); // Log for debugging purposes
+
+      if (!data || data.type === "disambiguation" || !data.extract) {
+        toast({ title: "No results found", description: "No Wikipedia article found for this species.", variant: "destructive" });
+        console.error("Wikipedia API returned an unexpected format:", data);
+        return;
+      }
+
+      // Autofill form fields if data is valid
+      form.setValue("description", data.extract);
+      form.setValue("image", data.thumbnail?.source || "https://via.placeholder.com/150");
+
+      toast({ title: "Autofilled!", description: "Description and image updated from Wikipedia." });
+    } catch (error) {
+      console.error("Error fetching from Wikipedia:", error);
+      toast({ title: "Error", description: "Failed to fetch data. Try again.", variant: "destructive" });
+    }
+      setLoading(false);
+  };
 
   const onSubmit = async (input: FormData) => {
     // The `input` prop contains data that has already been processed by zod. We can now use it in a supabase query
@@ -145,6 +180,19 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
             Add a new species here. Click &quot;Add Species&quot; below when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Wikipedia Search Field */}
+        <div className="flex gap-2">
+          <Input
+            placeholder="Search species name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <Button onClick={() => { void fetchWikipediaData(); }} disabled={loading}>
+            {loading ? "Searching..." : "Search"}
+          </Button>
+        </div>
+
         <Form {...form}>
           <form onSubmit={(e: BaseSyntheticEvent) => void form.handleSubmit(onSubmit)(e)}>
             <div className="grid w-full items-center gap-4">
@@ -165,7 +213,8 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
                 control={form.control}
                 name="common_name"
                 render={({ field }) => {
-                  // We must extract value from field and convert a potential defaultValue of `null` to "" because inputs can't handle null values: https://github.com/orgs/react-hook-form/discussions/4091
+                  // Extract value from field and convert a potential defaultValue
+                  // of `null` to "" because inputs can't handle null values
                   const { value, ...rest } = field;
                   return (
                     <FormItem>
@@ -252,7 +301,8 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
                 control={form.control}
                 name="description"
                 render={({ field }) => {
-                  // We must extract value from field and convert a potential defaultValue of `null` to "" because textareas can't handle null values: https://github.com/orgs/react-hook-form/discussions/4091
+                  // Extract value from field and convert a potential defaultValue of
+                  // `null` to "" because textareas can't handle null values
                   const { value, ...rest } = field;
                   return (
                     <FormItem>
