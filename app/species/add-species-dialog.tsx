@@ -75,13 +75,21 @@ const defaultValues: Partial<FormData> = {
   description: null,
 };
 
+// Defines what the type of the Wikipedia API Response should be
+interface WikipediaResponse {
+  type?: string;
+  title?: string;
+  extract?: string;
+  thumbnail?: { source?: string };
+}
+
 export default function AddSpeciesDialog({ userId }: { userId: string }) {
   const router = useRouter();
 
   // Control open/closed state of the dialog
   const [open, setOpen] = useState<boolean>(false);
 
-  // Wikipedia feature
+  // Constants used for implementing Wikipedia API feature
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -101,7 +109,7 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
     setLoading(true);
     try {
       const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`);
-      const data: any = await response.json();
+      const data = (await response.json()) as WikipediaResponse;
 
       console.log("Wikipedia API response:", data); // Log for debugging purposes
 
@@ -113,7 +121,7 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
 
       // Autofill form fields if data is valid
       form.setValue("description", data.extract);
-      form.setValue("image", data.thumbnail?.source || "https://via.placeholder.com/150");
+      form.setValue("image", data.thumbnail?.source ?? "https://via.placeholder.com/150");
 
       toast({ title: "Autofilled!", description: "Description and image updated from Wikipedia." });
     } catch (error) {
