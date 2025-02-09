@@ -56,6 +56,7 @@ export default function SpeciesDetailsDialog({ species }: SpeciesDetailsDialogPr
         <div className="space-y-3 p-4">
           <p><strong>Kingdom:</strong> {species.kingdom}</p>
           <p><strong>Total Population:</strong> {species.total_population?.toLocaleString() ?? "Unknown"}</p>
+          <p><strong>Endangered:</strong> {species.endangered ? "Yes" : "No"}</p>
           <p className="whitespace-pre-wrap">
             <strong>Description:</strong> {species.description ?? "No description available."}
           </p>

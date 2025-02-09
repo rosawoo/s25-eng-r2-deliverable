@@ -54,6 +54,7 @@ const speciesSchema = z.object({
     .nullable()
     // Transform empty string or only whitespace input to null before form submission, and trim whitespace otherwise
     .transform((val) => (!val || val.trim() === "" ? null : val.trim())),
+  endangered: z.boolean(),
 });
 
 type FormData = z.infer<typeof speciesSchema>;
@@ -268,6 +269,24 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
                   );
                 }}
               />
+
+              <FormField control={form.control} name="endangered" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Endangered Status</FormLabel>
+                  <Select value={field.value ? "yes" : "no"} onValueChange={(value) => field.onChange(value === "yes")}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="yes">Yes</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )} />
+
               <div className="flex">
                 <Button type="submit" className="ml-1 mr-1 flex-auto">
                   Add Species

@@ -22,7 +22,7 @@ import { createBrowserSupabaseClient } from "@/lib/client-utils";
 import type { Database } from "@/lib/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -40,6 +40,7 @@ const speciesSchema = z.object({
   total_population: z.number().int().positive().nullable(),
   image: z.string().url().nullable().transform((val) => (!val || val.trim() === "" ? null : val.trim())),
   description: z.string().nullable().transform((val) => (!val || val.trim() === "" ? null : val.trim())),
+  endangered: z.boolean(),
 });
 
 type FormData = z.infer<typeof speciesSchema>;
@@ -75,6 +76,7 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
           total_population: input.total_population,
           image: input.image,
           description: input.description,
+          endangered: input.endangered ?? false,
         })
         .eq("id", species.id);
 
@@ -119,6 +121,7 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
                   <FormMessage />
                 </FormItem>
               )} />
+              
               <FormField
                 control={form.control}
                 name="common_name"
@@ -132,6 +135,7 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
                   </FormItem>
                 )}
               />
+
               <FormField control={form.control} name="kingdom" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Kingdom</FormLabel>
@@ -146,6 +150,7 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
                   <FormMessage />
                 </FormItem>
               )} />
+
               <FormField control={form.control} name="total_population" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Total Population</FormLabel>
@@ -158,9 +163,33 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
                         onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)} // Convert to number, allow null
                       />
                     </FormControl>
-                    <FormMessage />
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="endangered" render={({ field }) => {
+                useEffect(() => {
+                  form.setValue("endangered", field.value);
+                }, [field.value]);
+
+                return (
+                  <FormItem>
+                    <FormLabel>Endangered Status</FormLabel>
+                    <Select value={field.value ? "yes" : "no"} onValueChange={(value) => field.onChange(value === "yes")}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="yes">Yes</SelectItem>
+                        <SelectItem value="no">No</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </FormItem>
-                )} />
+                );
+              }} />
+
               <Button type="submit">Save Changes</Button>
             </div>
           </form>
