@@ -54,7 +54,10 @@ const speciesSchema = z.object({
     .nullable()
     // Transform empty string or only whitespace input to null before form submission, and trim whitespace otherwise
     .transform((val) => (!val || val.trim() === "" ? null : val.trim())),
-  endangered: z.boolean(),
+  endangered:
+    z.boolean()
+    .nullable()
+    .transform((val) => (!val ? false : true)),
 });
 
 type FormData = z.infer<typeof speciesSchema>;
@@ -73,6 +76,7 @@ const defaultValues: Partial<FormData> = {
   total_population: null,
   image: null,
   description: null,
+  endangered: false,
 };
 
 // Defines what the type of the Wikipedia API Response should be

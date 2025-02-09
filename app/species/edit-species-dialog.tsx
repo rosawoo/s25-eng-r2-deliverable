@@ -61,6 +61,7 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
       total_population: species.total_population,
       image: species.image,
       description: species.description,
+      endangered: species.endangered
     },
   });
 
@@ -121,7 +122,7 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
                   <FormMessage />
                 </FormItem>
               )} />
-              
+
               <FormField
                 control={form.control}
                 name="common_name"
@@ -168,9 +169,9 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
               )} />
 
               <FormField control={form.control} name="endangered" render={({ field }) => {
-                useEffect(() => {
-                  form.setValue("endangered", field.value);
-                }, [field.value]);
+                // useEffect(() => {
+                //   form.setValue("endangered", field.value);
+                // }, [field.value]);
 
                 return (
                   <FormItem>
