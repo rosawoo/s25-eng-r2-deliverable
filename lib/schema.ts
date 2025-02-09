@@ -4,24 +4,9 @@ export interface Database {
   public: {
     Tables: {
       profiles: {
-        Row: {
-          biography: string | null;
-          display_name: string;
-          email: string;
-          id: string;
-        };
-        Insert: {
-          biography?: string | null;
-          display_name: string;
-          email: string;
-          id: string;
-        };
-        Update: {
-          biography?: string | null;
-          display_name?: string;
-          email?: string;
-          id?: string;
-        };
+        Row: { biography: string | null; display_name: string; email: string; id: string };
+        Insert: { biography?: string | null; display_name: string; email: string; id: string };
+        Update: { biography?: string | null; display_name?: string; email?: string; id?: string };
         Relationships: [
           {
             foreignKeyName: "profiles_id_fkey";
@@ -41,6 +26,7 @@ export interface Database {
           kingdom: Database["public"]["Enums"]["kingdom"];
           scientific_name: string;
           total_population: number | null;
+          endangered?: boolean;
         };
         Insert: {
           author: string;
@@ -51,6 +37,7 @@ export interface Database {
           kingdom: Database["public"]["Enums"]["kingdom"];
           scientific_name: string;
           total_population?: number | null;
+          endangered?: boolean;
         };
         Update: {
           author?: string;
@@ -61,6 +48,7 @@ export interface Database {
           kingdom?: Database["public"]["Enums"]["kingdom"];
           scientific_name?: string;
           total_population?: number | null;
+          endangered?: boolean;
         };
         Relationships: [
           {
@@ -72,17 +60,9 @@ export interface Database {
         ];
       };
     };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      [_ in never]: never;
-    };
-    Enums: {
-      kingdom: "Animalia" | "Plantae" | "Fungi" | "Protista" | "Archaea" | "Bacteria";
-    };
-    CompositeTypes: {
-      [_ in never]: never;
-    };
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
+    Enums: { kingdom: "Animalia" | "Plantae" | "Fungi" | "Protista" | "Archaea" | "Bacteria" };
+    CompositeTypes: { [_ in never]: never };
   };
 }
