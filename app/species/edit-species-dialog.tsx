@@ -22,7 +22,7 @@ import { createBrowserSupabaseClient } from "@/lib/client-utils";
 import type { Database } from "@/lib/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -169,10 +169,6 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
               )} />
 
               <FormField control={form.control} name="endangered" render={({ field }) => {
-                // useEffect(() => {
-                //   form.setValue("endangered", field.value);
-                // }, [field.value]);
-
                 return (
                   <FormItem>
                     <FormLabel>Endangered Status</FormLabel>
