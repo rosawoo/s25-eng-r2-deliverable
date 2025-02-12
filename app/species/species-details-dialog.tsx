@@ -15,30 +15,19 @@
  */
 
 "use client"; // Ensures this component is rendered on the client-side since it
-              // uses state and event handlers
+// uses state and event handlers
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import type { Database } from "@/lib/schema";
-import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { useEffect, useState } from "react";
 
 // Initialize Supabase client (client-side)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
 // Define the type for a Species object using the database schema
 type Species = Database["public"]["Tables"]["species"]["Row"];
 
-// // Define the inferface for comments on species cards
-// interface Comment {
-//   id: number;
-//   comment_text: string;
-//   created_at: string;
-//   user_id: string;
-//   user: { display_name: string | null };
-// }
 
 // Define TypeScript interface for the Supabase response
 interface SupabaseComment {
@@ -56,7 +45,7 @@ interface Comment {
   created_at: string;
   user_id: string;
   user: { display_name: string | null };
-};
+}
 
 // Define the props that the SpeciesDetailsDialog component expects
 interface SpeciesDetailsDialogProps {
@@ -100,8 +89,14 @@ export default function SpeciesDetailsDialog({ species }: SpeciesDetailsDialogPr
     }
 
     async function getUserSession() {
-      const { data } = await supabase.auth.getSession();
-      setUserId(data?.session?.user.id ?? null);
+      const { data, error } = await supabase.auth.getUser();
+      console.log("Fetched user:", data);
+
+      if (error) {
+        console.error("Error fetching user:", error.message);
+      } else {
+        setUserId(data?.user?.id ?? null);
+      }
     }
 
     if (open) {
@@ -117,11 +112,11 @@ export default function SpeciesDetailsDialog({ species }: SpeciesDetailsDialogPr
     const { data, error } = await supabase
       .from("comments")
       .insert([{ species_id: species.id, user_id: userId, comment_text: newComment }])
-      .select(`id, comment_text, created_at, user_id, profiles!inner(display_name)`) 
+      .select(`id, comment_text, created_at, user_id, profiles!inner(display_name)`)
       .single();
 
     if (!error && data) {
-      // ✅ Explicitly cast `data` to SupabaseComment
+      // Explicitly cast data to SupabaseComment
       const typedData = data as unknown as SupabaseComment;
 
       const newCommentObject: Comment = {
@@ -174,9 +169,7 @@ export default function SpeciesDetailsDialog({ species }: SpeciesDetailsDialogPr
     <Dialog open={open} onOpenChange={setOpen}>
       {/* DialogTrigger - This button opens the dialog when clicked */}
       <DialogTrigger asChild>
-        <button className="w-full bg-green-500 hover:bg-green-600 text-white p-2 rounded-md">
-          Learn More
-        </button>
+        <button className="w-full rounded-md bg-green-500 p-2 text-white hover:bg-green-600">Learn More</button>
       </DialogTrigger>
 
       {/* DialogContent - The content displayed inside the pop-up */}
@@ -190,39 +183,49 @@ export default function SpeciesDetailsDialog({ species }: SpeciesDetailsDialogPr
 
         {/* Species Details Section */}
         <div className="space-y-3 p-4">
-          <p><strong>Kingdom:</strong> {species.kingdom}</p>
-          <p><strong>Total Population:</strong> {species.total_population?.toLocaleString() ?? "Unknown"}</p>
-          <p><strong>Endangered:</strong> {species.endangered ? "Yes" : "No"}</p>
+          <p>
+            <strong>Kingdom:</strong> {species.kingdom}
+          </p>
+          <p>
+            <strong>Total Population:</strong> {species.total_population?.toLocaleString() ?? "Unknown"}
+          </p>
+          <p>
+            <strong>Endangered:</strong> {species.endangered ? "Yes" : "No"}
+          </p>
           <p className="whitespace-pre-wrap">
             <strong>Description:</strong> {species.description ?? "No description available."}
           </p>
+        </div>
 
         {/* Author Information Section */}
         {author ? (
-            <div className="mt-4 p-3 border rounded-md bg-green-500">
-              <p className="font-medium">Species added by:</p>
-              <p className="text-gray-700">{author.display_name ?? "Unknown Author"}</p>
-              <p className="text-gray-500 text-sm">{author.email}</p>
-            </div>
-          ) : (
-            <p className="text-gray-500">Author information not available.</p>
-          )}
-        </div>
+          <div className="mt-4 rounded-md border bg-green-500 p-3">
+            <p className="font-medium">Species added by:</p>
+            <p className="text-gray-700">{author.display_name ?? "Unknown Author"}</p>
+            <p className="text-sm text-gray-500">{author.email}</p>
+          </div>
+        ) : (
+          <p className="text-gray-500">Author information not available.</p>
+        )}
 
-        {/* Comment Section */}
+        {/* Comments Section */}
         <div className="mt-4">
           <h3 className="text-lg font-semibold">Comments</h3>
-          <div className="space-y-3 mt-2">
+
+          {/* Display Comments */}
+          <div className="mt-2 space-y-3">
             {comments.length > 0 ? (
               comments.map((comment) => (
-                <div key={comment.id} className="p-3 border rounded-md bg-gray-100">
+                <div key={comment.id} className="rounded-md border bg-gray-100 p-3">
                   <p className="text-gray-700">{comment.user.display_name ?? "Anonymous"}:</p>
                   <p className="text-gray-600">{comment.comment_text}</p>
-                  <p className="text-gray-400 text-xs">{new Date(comment.created_at).toLocaleString()}</p>
+                  <p className="text-xs text-gray-400">{new Date(comment.created_at).toLocaleString()}</p>
                   {userId === comment.user_id && (
                     <button
-                      onClick={() => { void handleDeleteComment(comment.id); }}
-                      className="text-red-500 text-sm mt-1"
+                      onClick={() => {
+                        void handleDeleteComment(comment.id);
+                      }}
+                      className="mt-1 text-sm text-red-500"
                     >
                       Delete
                     </button>
@@ -230,26 +233,32 @@ export default function SpeciesDetailsDialog({ species }: SpeciesDetailsDialogPr
                 </div>
               ))
             ) : (
-              <p className="text-gray-500">No comments yet. Be the first to comment!</p>
+              <p className="text-gray-500">There are no comments yet.</p>
             )}
           </div>
 
           {/* Add Comment Input */}
-          {userId && (
+          {userId ? (
             <div className="mt-4">
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                className="w-full p-2 border rounded-md"
-                placeholder="Leave a comment..."
+                className="w-full rounded-md border p-2"
+                placeholder="Leave a comment here!"
               />
               <button
-                onClick={() => { void handleAddComment(); }}
-                className="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md"
+                onClick={() => {
+                  void handleAddComment();
+                }}
+                className="mt-2 rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
               >
                 Submit
               </button>
             </div>
+          ) : (
+            <p className="mt-2 text-sm text-gray-500">
+              Logged in users may leave a comment.
+            </p>
           )}
         </div>
       </DialogContent>
