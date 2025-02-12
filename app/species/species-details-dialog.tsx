@@ -19,7 +19,14 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import type { Database } from "@/lib/schema";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+// Initialize Supabase client (client-side)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 // Define the type for a Species object using the database schema
 type Species = Database["public"]["Tables"]["species"]["Row"];
@@ -29,10 +36,42 @@ interface SpeciesDetailsDialogProps {
   species: Species; // The species object containing details to be displayed
 }
 
+// Define the interface for an Author (User Profile)
+interface Author {
+  display_name: string | null;
+  email: string;
+}
+
 // SpeciesDetailsDialog Component - Displays detailed information about a species in a pop-up dialog
 export default function SpeciesDetailsDialog({ species }: SpeciesDetailsDialogProps) {
-  // State to control whether the dialog is open or closed
+  // State to control whether the dialog is opened or not
   const [open, setOpen] = useState(false);
+  // State to add author details functionality
+  const [author, setAuthor] = useState<Author | null>(null);
+
+  // When the dialog opens, get the author details
+  useEffect(() => {
+    async function fetchAuthor() {
+      if (!species.author) return; // No author so skip fetching
+
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("display_name, email")
+          .eq("id", species.author)
+          .single();
+
+        if (error) throw error; // Throw error so it's caught below
+        setAuthor(data);
+      } catch (err) {
+        console.error("Error fetching author:", err);
+      }
+    }
+
+    if (open) {
+      fetchAuthor().catch((err) => console.error("Unhandled fetchAuthor error:", err));
+    }
+  }, [open, species.author]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -60,6 +99,17 @@ export default function SpeciesDetailsDialog({ species }: SpeciesDetailsDialogPr
           <p className="whitespace-pre-wrap">
             <strong>Description:</strong> {species.description ?? "No description available."}
           </p>
+
+        {/* Author Information Section */}
+        {author ? (
+            <div className="mt-4 p-3 border rounded-md bg-green-500">
+              <p className="font-medium">Species added by:</p>
+              <p className="text-gray-700">{author.display_name ?? "Unknown Author"}</p>
+              <p className="text-gray-500 text-sm">{author.email}</p>
+            </div>
+          ) : (
+            <p className="text-gray-500">Author information not available.</p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
