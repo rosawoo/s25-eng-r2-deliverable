@@ -31,6 +31,33 @@ const supabase = createClient(
 // Define the type for a Species object using the database schema
 type Species = Database["public"]["Tables"]["species"]["Row"];
 
+// // Define the inferface for comments on species cards
+// interface Comment {
+//   id: number;
+//   comment_text: string;
+//   created_at: string;
+//   user_id: string;
+//   user: { display_name: string | null };
+// }
+
+// Define TypeScript interface for the Supabase response
+interface SupabaseComment {
+  id: number;
+  comment_text: string;
+  created_at: string;
+  user_id: string;
+  profiles: { display_name: string | null }[]; // Supabase returns an array
+}
+
+// Define Comment type using Supabase schema
+interface Comment {
+  id: number;
+  comment_text: string;
+  created_at: string;
+  user_id: string;
+  user: { display_name: string | null };
+};
+
 // Define the props that the SpeciesDetailsDialog component expects
 interface SpeciesDetailsDialogProps {
   species: Species; // The species object containing details to be displayed
@@ -48,6 +75,76 @@ export default function SpeciesDetailsDialog({ species }: SpeciesDetailsDialogPr
   const [open, setOpen] = useState(false);
   // State to add author details functionality
   const [author, setAuthor] = useState<Author | null>(null);
+  // State to add comments details functionality
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Fetch comments when dialog opens
+  useEffect(() => {
+    async function fetchComments() {
+      const { data, error } = await supabase
+        .from("comments")
+        .select(`id, comment_text, created_at, user_id, profiles!inner(display_name)`) // Ensure profile relation is included
+        .eq("species_id", species.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching comments:", error.message);
+        return;
+      }
+
+      if (data) {
+        setComments(data as unknown as Comment[]);
+      }
+    }
+
+    async function getUserSession() {
+      const { data } = await supabase.auth.getSession();
+      setUserId(data?.session?.user.id ?? null);
+    }
+
+    if (open) {
+      void fetchComments();
+      void getUserSession();
+    }
+  }, [open, species.id]);
+
+  // Handle Adding a Comment
+  async function handleAddComment(): Promise<void> {
+    if (!newComment.trim() || !userId) return;
+
+    const { data, error } = await supabase
+      .from("comments")
+      .insert([{ species_id: species.id, user_id: userId, comment_text: newComment }])
+      .select(`id, comment_text, created_at, user_id, profiles!inner(display_name)`) 
+      .single();
+
+    if (!error && data) {
+      // ✅ Explicitly cast `data` to SupabaseComment
+      const typedData = data as unknown as SupabaseComment;
+
+      const newCommentObject: Comment = {
+        id: typedData.id,
+        comment_text: typedData.comment_text,
+        created_at: typedData.created_at,
+        user_id: typedData.user_id,
+        user: { display_name: typedData.profiles?.[0]?.display_name ?? "Unknown" },
+      };
+
+      setComments((prev) => [newCommentObject, ...prev]); // Prepend new comment to list
+      setNewComment("");
+    }
+  }
+
+  // Handle Deleting a Comment
+  async function handleDeleteComment(commentId: number): Promise<void> {
+    const { error } = await supabase.from("comments").delete().eq("id", commentId);
+
+    if (!error) {
+      setComments((prev) => prev.filter((comment) => comment.id !== commentId));
+    }
+  }
 
   // When the dialog opens, get the author details
   useEffect(() => {
@@ -109,6 +206,50 @@ export default function SpeciesDetailsDialog({ species }: SpeciesDetailsDialogPr
             </div>
           ) : (
             <p className="text-gray-500">Author information not available.</p>
+          )}
+        </div>
+
+        {/* Comment Section */}
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold">Comments</h3>
+          <div className="space-y-3 mt-2">
+            {comments.length > 0 ? (
+              comments.map((comment) => (
+                <div key={comment.id} className="p-3 border rounded-md bg-gray-100">
+                  <p className="text-gray-700">{comment.user.display_name ?? "Anonymous"}:</p>
+                  <p className="text-gray-600">{comment.comment_text}</p>
+                  <p className="text-gray-400 text-xs">{new Date(comment.created_at).toLocaleString()}</p>
+                  {userId === comment.user_id && (
+                    <button
+                      onClick={() => { void handleDeleteComment(comment.id); }}
+                      className="text-red-500 text-sm mt-1"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500">No comments yet. Be the first to comment!</p>
+            )}
+          </div>
+
+          {/* Add Comment Input */}
+          {userId && (
+            <div className="mt-4">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="w-full p-2 border rounded-md"
+                placeholder="Leave a comment..."
+              />
+              <button
+                onClick={() => { void handleAddComment(); }}
+                className="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md"
+              >
+                Submit
+              </button>
+            </div>
           )}
         </div>
       </DialogContent>
