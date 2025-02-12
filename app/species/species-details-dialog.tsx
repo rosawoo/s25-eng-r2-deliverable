@@ -143,6 +143,7 @@ export default function SpeciesDetailsDialog({ species }: SpeciesDetailsDialogPr
 
   // When the dialog opens, get the author details
   useEffect(() => {
+
     async function fetchAuthor() {
       if (!species.author) return; // No author so skip fetching
 

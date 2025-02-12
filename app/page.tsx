@@ -46,11 +46,8 @@ export default function Home() {
         className="flex flex-col items-center mt-4"
       >
         <TypographyP className="text-md text-gray-600">
-          Sign in at the top right to start exploring and contributing.
+          Sign in at the top right to start exploring and contributing!
         </TypographyP>
-        <button className="mt-4 rounded-lg bg-green-600 px-6 py-3 text-lg font-semibold text-white transition-all duration-300 hover:bg-green-700 hover:shadow-md">
-          Explore Now
-        </button>
       </motion.div>
 
       {/* Footer */}
